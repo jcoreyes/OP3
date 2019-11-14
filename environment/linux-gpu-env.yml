@@ -1,0 +1,21 @@
+name: op3
+channels:
+- pytorch
+- anaconda  # for mkl
+dependencies:
+- joblib=0.9.4
+- matplotlib=2.0.2=np111py35_0
+- mkl=2018.0.2  # Need to add explicit dependence for pytorch
+- numpy=1.11.3
+- python=3.5.2
+- python-dateutil=2.6.1=py35_0
+- pytorch=1.0.0
+- scipy=1.0.1
+- pip:
+  - cloudpickle==0.5.2
+  - gym[all]==0.10.5lo
+  - gitpython==2.1.7
+  - h5py==2.7.1
+  - pathos==0.2.3
+  - lockfile-0.12.2
+  - opencv-python==4.1.1.26
