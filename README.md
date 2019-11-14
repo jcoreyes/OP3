@@ -1,6 +1,7 @@
 # OP3
-Code for running "Entity Abstraction in Visual Model-Based Reinforcement Learning".
+Code for running ["Entity Abstraction in Visual Model-Based Reinforcement Learning"](https://arxiv.org/abs/1910.12827).
 
+[Website link](https://sites.google.com/view/op3website/)
 
 ## Installation
 1. Copy `conf.py` to `conf_private.py`:
@@ -30,7 +31,7 @@ Download these datasets to `op3/data/datasets/`.
   <img src="https://drive.google.com/uc?export=view&id=1TLUQo3ekl9Err_Mi_7hK77Q2bAUwlTwG" width="19%">
 </p>
 
-Download the single step block stacking dataset [stack](https://drive.google.com/file/d/1RvPmTqpVmZG7p1orhznzvxTd97Xay1Mh/view?usp=sharing) which contains 60,000 before and after images of blocks being dropped. This is the same dataset used in [O2P2](https://people.eecs.berkeley.edu/~janner/o2p2/) "Reasoning About Physical Interactions with Object-Oriented Prediction and Planning." TODO Describe dataset format
+Download the single step block stacking dataset [stack](https://drive.google.com/file/d/1RvPmTqpVmZG7p1orhznzvxTd97Xay1Mh/view?usp=sharing) which contains 60,000 before and after images of blocks being dropped. This is the same dataset used in [O2P2](https://people.eecs.berkeley.edu/~janner/o2p2/) "Reasoning About Physical Interactions with Object-Oriented Prediction and Planning."
 
 This dataset can also be generated using the Mujoco environment.
 
