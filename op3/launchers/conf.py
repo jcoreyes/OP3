@@ -11,7 +11,7 @@ If you're going to rename this directory and use EC2, then change
 `doodad.mount.MountLocal.filter_dir`
 """
 # The directory of the project, not source
-op3_project_dir = join(os.path.dirname(op3.__file__), os.pardir)
+op3_project_dir = join(os.path.dirname(os.path.dirname(op3.__file__)))
 LOCAL_LOG_DIR = join(op3_project_dir, 'data', 'logs')
 """
 ********************************************************************************

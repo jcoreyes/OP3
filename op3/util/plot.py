@@ -13,7 +13,7 @@ def plot_multi_image(imgs, save_dir, caption=None):
 
     rows, cols, imsize, imsize, _ = imgs.shape
 
-    fig = plt.figure(figsize=(9, 13))
+    fig = plt.figure(figsize=(cols*5, rows*5))
     ax = []
     count = 1
     for i in range(rows):
