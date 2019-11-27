@@ -17,27 +17,8 @@ import os
 import pdb
 
 
-# model = load_from_old_version(model, "/nfs/kun1/users/rishiv/Research/op3_exps/08-05-twoBalls-static-iodine-reg/08-05-twoBalls-static_iodine-reg_2019_08_05_14_19_42_0000--s-747/test_save_params.pkl")
-# def load_from_old_version(model, file_path):
-#     cur_model_state_dict = model.state_dict()
-#     vals = torch.load(file_path)
-#     for a_key in vals.keys():
-#         if "decoder" in a_key:
-#             cur_model_key = a_key.replace("module.decoder", "decode_net.broadcast_net")
-#             cur_model_state_dict[cur_model_key] = vals[a_key]
-#         elif "refinement" in a_key:
-#             cur_model_key = a_key.replace("module.", "")
-#             cur_model_state_dict[cur_model_key] = vals[a_key]
-#         elif "layer_norms" in a_key:
-#             cur_model_key = a_key.replace("module.", "")
-#             cur_model_state_dict[cur_model_key] = vals[a_key]
-#
-#     model.load_state_dict(cur_model_state_dict)
-#     return model
-
-
-#Variant must contain the following keywords: refinement_model_type, decoder_model_type, dynamics_model_type, K
-#Note: repsize represents the size of the deterministic & stochastic each, so the full state size is repsize*2
+# Variant must contain the following keywords: refinement_model_type, decoder_model_type, dynamics_model_type, K
+#   Note: repsize represents the size of the deterministic & stochastic each, so the full state size is repsize*2
 def create_model_v2(variant, det_size, sto_size, action_dim):
     K = variant['K']
 
@@ -79,8 +60,7 @@ def create_model_v2(variant, det_size, sto_size, action_dim):
     return model
 
 
-#Probably should rename to OP3
-#Notation: R denotes size of deterministic & stochastic state (each), R2 denotes dize of lstm hidden state for iodine
+# Notation: R denotes size of deterministic & stochastic state (each), R2 denotes dize of lstm hidden state for iodine
 #  D denotes image size, A denotes action dimension, B denotes batch size
 #  (Sc) denotes a scalar while (X,Y,Z) represent the shape
 class OP3Model(torch.nn.Module):
@@ -93,28 +73,21 @@ class OP3Model(torch.nn.Module):
         self.det_size = det_size
         self.sto_size = sto_size
         self.full_rep_size = det_size + sto_size
-        self.deterministic_sampling = deterministic_sampling
+        self.deterministic_sampling = deterministic_sampling  # Use the mean instead of actually sampling from the distribution
 
-        #Loss hyper-parameters
-        self.sigma = 0.1
-        self.set_beta(beta)
-        # self.beta = beta
+        # Loss hyper-parameters
+        self.sigma = 0.1  # Sigma for reconstruction loss
+        self.set_beta(beta)  # Beta is the coefficient on the KL loss
 
-        #Deterministic sampling changes
-        # self.deterministic_sampling = deterministic_sampling
-        # if deterministic_sampling:
-        #     if beta != 0:
-        #         print("DANGER ALERT! Having beta set to {} is mathematically incorrect when sampling deterministically".format(self.beta))
-
-        #Refinement variables
+        # Refinement variables
         l_norm_sizes_2d = [1, 1, 1, 3]
         self.layer_norms_2d = nn.ModuleList([LayerNorm2D(l) for l in l_norm_sizes_2d])
         l_norm_sizes_1d = [self.sto_size, self.sto_size]
         self.layer_norms_1d = nn.ModuleList([LayerNorm(l, center=True, scale=True) for l in l_norm_sizes_1d])
 
-        self.eval_mode = False #Should set to true when testing
+        self.eval_mode = False # Should set to true when testing
 
-        #Initial state parameters
+        # Initial state parameters
         if det_size != 0:
             self.inital_deter_state = Parameter(ptu.randn((det_size))/np.sqrt(det_size))
         self.initial_lambdas1 = Parameter(ptu.randn((sto_size))/np.sqrt(sto_size))
@@ -165,21 +138,15 @@ class OP3Model(torch.nn.Module):
         mu1, softplus1 = prior["lambdas1"], prior["lambdas2"]
         mu2, softplus2 = post["lambdas1"], post["lambdas2"]
 
-        # stds1 = torch.sqrt(torch.log(1 + softplus1.exp()) + 1e-5)
-        # stds2 = torch.sqrt(torch.log(1 + softplus2.exp()) + 1e-5)
         stds1 = self._softplus_to_std(softplus1)
         stds2 = self._softplus_to_std(softplus2)
         q1 = MultivariateNormal(loc=mu1, scale_tril=torch.diag_embed(stds1))
         q2 = MultivariateNormal(loc=mu2, scale_tril=torch.diag_embed(stds2))
-        # tmp = torch.distributions.kl.kl_divergence(q2, q1) #KL(post||prior), note ordering matters!
-        # ptu.check_nan(tmp, logger.get_snapshot_dir())
-        # return tmp
-        return torch.distributions.kl.kl_divergence(q2, q1) #KL(post||prior), note ordering matters!
+        return torch.distributions.kl.kl_divergence(q2, q1)  # KL(post||prior), note ordering matters
 
     def get_samples(self, means, softplusses):
         if self.deterministic_sampling:
             return means
-        # stds = torch.sqrt(torch.log(1 + softplusses.exp()) + 1e-5)
         stds = self._softplus_to_std(softplusses)
         epsilon = ptu.randn(*means.size()).to(stds.device)
         latents = epsilon * stds + means
@@ -219,7 +186,6 @@ class OP3Model(torch.nn.Module):
                 "samples" : samples      #(n,k,Rd+Rs)
             }
         }
-        # ptu.check_nan([lambdas1, lambdas2, samples])
         return hidden_state
 
 
@@ -269,16 +235,12 @@ class OP3Model(torch.nn.Module):
                                  ], -1) #(B*K,2*Rs)
 
         if action is not None: #Use action as extra input into refinement: This is only for next step refinement (sequence iodine)
-            action = self._flatten_first_two(action.unsqueeze(1).repeat(1,K,1)) #(B,A)->(B,K,A)->(B*K,A)
+            action = self._flatten_first_two(action.unsqueeze(1).repeat(1, K, 1)) #(B,A)->(B,K,A)->(B*K,A)
 
-        # h1, h2 = self._flatten_first_two(hidden_states[2]), self._flatten_first_two(hidden_states[3]) #(B*K, R2)
-        # h1, h2 = self._flatten_first_two(hidden_states["post"]["extra_info"][0]), \
-        #          self._flatten_first_two(hidden_states["post"]["extra_info"][1])  # (B*K, R2)
         h1, h2 = hidden_states["post"]["extra_info"][0], hidden_states["post"]["extra_info"][1] #Each (1,B*K,R2)
         h1 = h1.view(bs * K, -1)
         h2 = h2.view(bs * K, -1)
 
-        # pdb.set_trace()
         lambdas1, lambdas2, h1, h2 = self.refinement_net(a, h1, h2,
                                                          extra_input=torch.cat(
                                                              [extra_input, self._flatten_first_two(hidden_states["post"]["lambdas1"]),
@@ -286,14 +248,12 @@ class OP3Model(torch.nn.Module):
                                                               self._flatten_first_two(hidden_states["post"]["samples"])], -1),
                                                          add_fc_input=action) #Lambdas (B*K,Rs),   h (B*K,R2)
 
-        # new_hidden_states = [self._unflatten_first(lambdas1, K), self._unflatten_first(lambdas2, K), self._unflatten_first(h1, K), self._unflatten_first(h2, K)]
-
         lambdas1 = self._unflatten_first(lambdas1, K) #(B,K,Rs)
         lambdas2 = self._unflatten_first(lambdas2, K) #(B,K,Rs)
         samples = self.get_samples(lambdas1, lambdas2) #(B,K,Rs)
         new_hidden_states = {
-            "prior": hidden_states["prior"], #Do not change prior
-            "post": { #Update post
+            "prior": hidden_states["prior"],  # Do not change prior
+            "post": {  # Update post
                 "deter_state": hidden_states["post"]["deter_state"], #Do not update deterministic part of state (B,K,R)
                 "lambdas1": lambdas1, #Update lambdas (B,K,R)
                 "lambdas2": lambdas2, #(B,K,R)
@@ -301,7 +261,6 @@ class OP3Model(torch.nn.Module):
                 "samples": samples #Update samples (B,K,R)
             }
         }
-        # ptu.check_nan([lambdas1, lambdas2, samples])
         return new_hidden_states
 
     # Inputs: hidden_states, actions (B,A) or None
@@ -314,7 +273,6 @@ class OP3Model(torch.nn.Module):
             actions = self._flatten_first_two(actions)  # (B*K,A)
         full_states = self._flatten_first_two(self.get_full_tensor_state(hidden_states)) #(B*K,Rs+Rd)
 
-        # ptu.check_nan([full_states, actions])
         deter_states, lambdas1, lambdas2 = self.dynamics_net(full_states, actions) #(B*K,Rd), (B*K,Rs), (B*K,Rs)
         h1, h2 = ptu.zeros_like(hidden_states["post"]["extra_info"][0]).to(hidden_states["post"]["extra_info"][0].device), \
                  ptu.zeros_like(hidden_states["post"]["extra_info"][1]).to(hidden_states["post"]["extra_info"][1].device) #Set the h's to zero as the next refinement should start from scratch (B,K,R2)
@@ -335,7 +293,6 @@ class OP3Model(torch.nn.Module):
                 "samples": samples # (B,K,Rs)
             }
         }
-        # ptu.check_nan([lambdas1, lambdas2, deter_states, samples])
         return new_hidden_states
 
     # Input: hidden_states
@@ -348,9 +305,6 @@ class OP3Model(torch.nn.Module):
         mask_logits = self._unflatten_first(mask_logits, k) #(B,K,1,D,D)
         mask = F.softmax(mask_logits, dim=1)  #(B,K,1,D,D), these are the mask probability values
         colors = self._unflatten_first(colors, k) #(B,K,3,D,D)
-        # final_recon = (mask * colors).sum(1) #(B,3,D,D)
-        # pdb.set_trace()
-        # ptu.check_nan([mask_logits, mask, colors])
         return colors, mask, mask_logits
 
     # Inputs: colors (B,K,3,D,D),  masks (B,K,1,D,D),  target_imgs (B,3,D,D)
@@ -370,7 +324,6 @@ class OP3Model(torch.nn.Module):
         kle_loss = kle.sum() / b  # KL loss, (Sc)
 
         total_loss = complete_log_likelihood + self.beta * kle_loss  # Total loss, (Sc)
-        # ptu.check_nan([total_loss])
         return color_probs, pixel_complete_log_likelihood, kle_loss, complete_log_likelihood, total_loss
 
     # Inputs: images: None or (B, T_obs, 3, D, D),  actions: None or (B, T_acs, A),  initial_hidden_state or None
@@ -402,20 +355,17 @@ class OP3Model(torch.nn.Module):
         ###Loss based on schedule
         for i in range(len(schedule)):
             self.debug["at"] = i
-            # print(i)
             if schedule[i] == 0:  # Refinement step
-                # print("Refinement")
                 input_img = images[:, current_step]  # (B,3,D,D)
                 cur_hidden_state = self.refine(cur_hidden_state, input_img, previous_decode_loss_info=previous_decode_loss_info)
-            elif schedule[i] == 1:  # Physics step
-                # print("Dynamics")
+            elif schedule[i] == 1:  # Dynamics step
                 if actions is not None:
                     input_actions = actions[:, current_step]  # (B,A)
                 else:
                     input_actions = None
                 cur_hidden_state = self.dynamics(cur_hidden_state, input_actions)
                 current_step += 1
-            elif schedule[i] == 2:  # Next step refinement, just for sequence iodine
+            elif schedule[i] == 2:  # Next step refinement, just used for sequence iodine
                 if actions is not None:
                     input_actions = actions[:, current_step]  # (B,A)
                 else:
@@ -431,9 +381,8 @@ class OP3Model(torch.nn.Module):
             colors_list.append(colors)
             masks_list.append(mask)
 
-            if loss_schedule[i] != 0:
+            if loss_schedule[i] != 0:  # Calculate the loss if we need to do so
                 target_images = images[:, current_step]  # (B,3,D,D)
-                # print("Loss")
                 color_probs, pixel_complete_log_likelihood, kle_loss, clog_prob, total_loss = \
                     self.get_loss(cur_hidden_state, colors, mask, target_images)
 
@@ -670,7 +619,6 @@ class OP3Model(torch.nn.Module):
                 # Images are torch tensors, schedule is numpy array
                 quicksave(obs[0], colors[0], masks[0], schedule, figure_path, "full")
 
-        # pdb.set_trace()
         important_info["colors"] = torch.cat(important_info["colors"]) # (B,K,3,D,D)
         important_info["masks"] = torch.cat(important_info["masks"])  # (B,K,1,D,D)
         important_info["sub_images"] = torch.cat(important_info["sub_images"])  # (B,K,3,D,D)
@@ -707,7 +655,6 @@ class OP3Model(torch.nn.Module):
 
             batch_initial_hidden_state = self.replicate_state(initial_hidden_state, end_index - start_index)  # (b,...)
             states = self.get_full_tensor_state(batch_initial_hidden_state)  # (b,K,R)
-            # pdb.set_trace()
             states = self._flatten_first_two(states)  # (b*K,R)
             input_actions = actions[start_index:end_index].repeat(self.K, 1)  # (b*K,A)
             vals = self.dynamics_net.get_state_action_attention_values(states, input_actions)  # (b*k, 1)
@@ -736,7 +683,6 @@ class OP3Model(torch.nn.Module):
             input_actions = actions[start_index:end_index].unsqueeze(1).repeat(1, self.K, 1)  # (b,K,A)
             input_actions = self._flatten_first_two(input_actions)
             state_vals, inter_vals, delta_vals = self.dynamics_net.get_all_attention_values(states, input_actions, self.K)  # (b*k,1), (b*k,k-1,1), (b*k,1)
-            # pdb.set_trace()
             state_action_attention[start_index:end_index] = self._unflatten_first(state_vals, self.K)[..., 0]  # (b,k)
             interaction_attention[start_index:end_index] = self._unflatten_first(inter_vals, self.K)[..., 0]  # (b,k,k-1)
             all_delta_vals[start_index:end_index] = self._unflatten_first(delta_vals, self.K)[..., 0]  # (b,k)

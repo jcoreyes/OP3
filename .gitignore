@@ -2,6 +2,7 @@
 **/.DS_STORE
 **/*.pyc
 **/*.swp
-rlkit/launchers/config.py
-
 \.idea/
+
+data/datasets/
+data/logs/
