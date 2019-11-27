@@ -16,7 +16,7 @@ import numpy as np
 from argparse import ArgumentParser
 from op3.launchers.launcher_util import run_experiment
 
-import op3.torch.op3_modules.op3_model as iodine_v2
+import op3.torch.op3_modules.op3_model as op3_model
 from op3.envs.blocks.mujoco.block_pick_and_place import BlockPickAndPlaceEnv
 from op3.util.misc import get_module_path
 from exps.pickplace_exps.saved_models.model_parameters_info import params_to_info
@@ -719,7 +719,7 @@ def main(variant):
     ######Start Model loading######
     op3_args = variant["op3_args"]
     op3_args['K'] = 4
-    m = iodine_v2.create_model_v2(op3_args, op3_args['det_repsize'], op3_args['sto_repsize'], action_dim=4)
+    m = op3_model.create_model_v2(op3_args, op3_args['det_repsize'], op3_args['sto_repsize'], action_dim=4)
 
     model_file = module_path + '/exps/pickplace_exps/saved_models/{}.pkl'.format(variant['model_file'])
     state_dict = torch.load(model_file)

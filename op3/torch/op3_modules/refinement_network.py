@@ -185,7 +185,8 @@ class RefinementNetwork(nn.Module):
     #add_fc_input is used for next step iodine where we want to add action information
     #Input: input (B*K,15,D,D),  hidden1 (B*K,R2),  hidden2 (B*K,R2),  extra_input (B*K,5*R),
     # add_fc_input is usually None except for next step refinement e.g. sequence iodine (B*K,A)
-    def forward(self, input, hidden1, hidden2, extra_input=None, add_fc_input=None):
+    #   See op3_model.refine(...) to see the exact inputs into the refinement network
+    def forward(self, input, hidden1, hidden2, extra_input, add_fc_input=None):
         hi = input #(B*K,15,D,D)
 
         coords = self.coords.repeat(input.shape[0], 1, 1, 1) #(B*K,2,D,D)
@@ -193,7 +194,6 @@ class RefinementNetwork(nn.Module):
 
         hi = self._apply_forward(hi, self.conv_layers, self.conv_norm_layers,
                                use_batch_norm=self.batch_norm_conv) #(B*K,64,1,1)
-        # pdb.set_trace()
         hi = self.avg_pooling(hi) #Avg pooling layer
         # flatten channels for fc layers
         hi = hi.view(hi.size(0), -1) #(B*K, 64)

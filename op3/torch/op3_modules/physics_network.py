@@ -2,8 +2,6 @@ import torch
 import torch.utils.data
 from op3.torch.pytorch_util import from_numpy
 from torch import nn
-# from torch.autograd import Variable
-# from torch.nn import functional as F
 from op3.pythonplusplus import identity
 from op3.torch.networks import Mlp
 from op3.torch import pytorch_util as ptu

@@ -10,7 +10,7 @@ import numpy as np
 from argparse import ArgumentParser
 from op3.launchers.launcher_util import run_experiment
 
-import op3.torch.op3_modules.op3_model as iodine_v2
+import op3.torch.op3_modules.op3_model as op3_model
 from op3.envs.blocks.mujoco.block_stacking_env import BlockEnv
 from op3.util.misc import get_module_path
 from exps.stack_exps.saved_models.model_parameters_info import params_to_info
@@ -460,7 +460,7 @@ def main(variant):
     ######Start Model loading######
     op3_args = variant["op3_args"]
     op3_args['K'] = n_goal_obs + 2   # K should be 2 more than the number of objects
-    m = iodine_v2.create_model_v2(op3_args, op3_args['det_repsize'], op3_args['sto_repsize'], action_dim=0)
+    m = op3_model.create_model_v2(op3_args, op3_args['det_repsize'], op3_args['sto_repsize'], action_dim=0)
 
     model_file = module_path + '/exps/stack_exps/saved_models/{}.pkl'.format(variant['model_file'])
     state_dict = torch.load(model_file)
@@ -511,7 +511,6 @@ def main(variant):
 
 
 #Example run:
-# CUDA_VISIBLE_DEVICES=3 python stage1_mpc.py -de 0 -s 3 -m [s64d64_v1_params, unfactorized_v1_params]
 # CUDA_VISIBLE_DEVICES=2 python mpc_stack.py -de 0 -s 0 -m s64d64_v1_params
 
 if __name__ == "__main__":

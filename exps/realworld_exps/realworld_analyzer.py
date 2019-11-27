@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 from op3.launchers.launcher_util import run_experiment
 
 from op3.util.misc import get_module_path
-import op3.torch.op3_modules.op3_model as iodine_v2
+import op3.torch.op3_modules.op3_model as op3_model
 from exps.realworld_exps.saved_models.model_parameters_info import params_to_info
 
 from collections import OrderedDict
@@ -34,7 +34,7 @@ def load_model(variant, action_size, k):
 
     if "action_dim" in op3_args.keys():
         action_size = op3_args["action_dim"]
-    m = iodine_v2.create_model_v2(op3_args, op3_args['det_repsize'], op3_args['sto_repsize'], action_dim=action_size)
+    m = op3_model.create_model_v2(op3_args, op3_args['det_repsize'], op3_args['sto_repsize'], action_dim=action_size)
 
     model_file = get_module_path() + '/exps/realworld_exps/saved_models/{}'.format(variant['model_file'])
     state_dict = torch.load(model_file)
@@ -61,15 +61,12 @@ def get_object_subimage_recon(frames, actions, model, model_type, T, image_type=
         all_object_recons = []
         masks_recons = []
         for i in range(T):
-            schedule = np.zeros(5) #Do 5 refine steps
-            # pdb.set_trace()
-            # x_hats, masks, total_loss, kle_loss, log_likelihood, mse, final_recon, lambdas = model._forward_dynamic_actions(frames[:, i:i+1], actions, schedule)
-
-            # Inputs: images: None or (B, T_obs, 3, D, D),  actions: None or (B, T_acs, A),  initial_hidden_state or None
+            schedule = np.zeros(5)  # Do 5 refine steps
+            # Inputs for model.run_schedule(...):
+            #   images: None or (B, T_obs, 3, D, D),  actions: None or (B, T_acs, A),  initial_hidden_state or None
             #   schedule: (T1),   loss_schedule:(T1)
             # Output: colors_list (B,T1,K,3,D,D), masks_list (B,T1,K,1,D,D), final_recon (B,3,D,D),
             #   total_loss, total_kle_loss, total_clog_prob, mse are all (Sc), end_hidden_state
-            # def run_schedule(self, images, actions, initial_hidden_state, schedule, loss_schedule, should_detach=False):
             colors_list, masks_list, final_recon, total_loss, total_kle_loss, total_clog_prob, mse, end_hidden_state = \
                 model.run_schedule(frames[:, i:i+1], actions, initial_hidden_state=None, schedule=schedule,
                                    loss_schedule=schedule, should_detach=True)
@@ -96,19 +93,15 @@ def get_object_subimage_recon(frames, actions, model, model_type, T, image_type=
         all_object_recons = all_object_recons.permute(1, 0, 2, 3, 4, 5).contiguous() #(bs, T, K+1, 3, D, D)
         mse = get_image_mse(frames[:, :T],  all_object_recons[:, :, 0]) #(bs, T)
         return all_object_recons, mse
-    elif model_type == 'rprp':
-        #T is the total number of frames, so we do T-1 physics steps
+    elif model_type == 'rprp':  # We store p(x_t|x0:t, a0:t-1)
+        # T is the total number of frames, so we do T-1 physics steps
         num_refine_per_phys = 2
         num_refine_per_phys += 1
-        schedule = np.zeros(seed_steps + (T-1)*(num_refine_per_phys)) #len(schedule) = T2
-        schedule[seed_steps::(num_refine_per_phys)] = 1 #[0,0,0,0,1,0,1,0,1,0] if num_refine_per_phys=1 for example
-        # pdb.set_trace()
-        # frames is (bs, T, ch, imsize, imsize),
-        # x_hats, masks, total_loss, kle_loss, log_likelihood, mse, final_recon, lambdas = model._forward_dynamic_actions(frames, actions, schedule)
+        schedule = np.zeros(seed_steps + (T-1)*(num_refine_per_phys))  # len(schedule) = T2
+        schedule[seed_steps::(num_refine_per_phys)] = 1  # [0,0,0,0,1,0,1,0,1,0] if num_refine_per_phys=1 for example
         colors_list, masks_list, final_recon, total_loss, total_kle_loss, total_clog_prob, mse, end_hidden_state = \
             model.run_schedule(frames, actions, initial_hidden_state=None, schedule=schedule,
                                loss_schedule=schedule, should_detach=True)
-        # pdb.set_trace()
         x_hats = colors_list
         masks = masks_list
 
@@ -130,16 +123,12 @@ def get_object_subimage_recon(frames, actions, model, model_type, T, image_type=
         mse = get_image_mse(frames[:, :T], all_object_recons[:, :, 0]) #(bs, T)
 
         return all_object_recons, mse
-    elif model_type == 'rprp_pred':
+    elif model_type == 'rprp_pred':  # We store p(x_t|x0:t-1, a0:t-1). Note we end at x_t-1, so we are predicting here
         # T is the total number of frames, so we do T-1 physics steps
         num_refine_per_phys = 2
         num_refine_per_phys += 1
         schedule = np.zeros(seed_steps + (T - 1) * num_refine_per_phys)  # len(schedule) = T2
         schedule[seed_steps::num_refine_per_phys] = 1  # [0,0,0,0,1,0,1,0,1,0] if num_refine_per_phys=1 for example
-        # pdb.set_trace()
-        # frames is (bs, T, ch, imsize, imsize),
-        # x_hats, masks, total_loss, kle_loss, log_likelihood, mse, final_recon, lambdas = model._forward_dynamic_actions(
-        #     frames, actions, schedule)
         colors_list, masks_list, final_recon, total_loss, total_kle_loss, total_clog_prob, mse, end_hidden_state = \
             model.run_schedule(frames, actions, initial_hidden_state=None, schedule=schedule,
                                loss_schedule=schedule, should_detach=True)
@@ -162,7 +151,6 @@ def get_object_subimage_recon(frames, actions, model, model_type, T, image_type=
         return all_object_recons, mse
     elif model_type == 'next_step':
         schedule = np.ones(T-1) * 2
-        # x_hats, masks, total_loss, kle_loss, log_likelihood, mse, final_recon, lambdas = model._forward_dynamic_actions(frames, actions, schedule)
         colors_list, masks_list, final_recon, total_loss, total_kle_loss, total_clog_prob, mse, end_hidden_state = \
             model.run_schedule(frames, actions, initial_hidden_state=None, schedule=schedule,
                                loss_schedule=schedule, should_detach=True)
@@ -350,7 +338,7 @@ dataset_to_models = dict(
         dict(saved_model_args = params_to_info["cloth_reg"],  # Normal OP3, refine after predicting, p(x_t|x1:t,a1:t)
              K=4,
              model_type="rprp"),
-        dict(saved_model_args = params_to_info["cloth_reg"],  # Normal OP3, don't refine after predicting, p(x_t+1|x1:t,a1:t)
+        dict(saved_model_args = params_to_info["cloth_reg"],  # Normal OP3, don't refine after predicting, p(x_t+1|x1:t,a1:t), we are predicting here
              K=4,
              model_type="rprp_pred"),
         dict(saved_model_args = params_to_info["cloth_sequence"],  # Sequence IODINE from appendix of IODINE paper
