@@ -1,7 +1,9 @@
 # OP3
-Code for running ["Entity Abstraction in Visual Model-Based Reinforcement Learning"](https://arxiv.org/abs/1910.12827).
+We present object-centric perception, prediction, and planning (OP3), an entity-centric dynamic latent variable framework for model-based reinforcement learning that acquires entity representations from raw visual observations without supervision and uses them to predict and plan.
 
-[Website link](https://sites.google.com/view/op3website/)
+CoRL 2019 Conference Paper: ["Entity Abstraction in Visual Model-Based Reinforcement Learning"](https://arxiv.org/abs/1910.12827). 
+
+More information is available at the [project website](https://sites.google.com/view/op3website/).
 
 ## Installation
 1. Copy `conf.py` to `conf_private.py`:
@@ -20,7 +22,7 @@ You'll need to [get your own MuJoCo key](https://www.roboti.us/license.html) if 
 
 ## Running Experiments
 ### Downloading and Generating Datasets
-Download these datasets to `op3/data/datasets/`.
+Download datasets from this [google drive folder](https://drive.google.com/drive/folders/18wbAHeyvBblabn9pz3MEajox0-1mXrn2?usp=sharing) to `op3/data/datasets/`.
 #### Single-Step Block Stacking
 <br>
 <p float="center">
@@ -31,7 +33,7 @@ Download these datasets to `op3/data/datasets/`.
   <img src="https://drive.google.com/uc?export=view&id=1TLUQo3ekl9Err_Mi_7hK77Q2bAUwlTwG" width="19%">
 </p>
 
-Download the single step block stacking dataset [stack](https://drive.google.com/file/d/1RvPmTqpVmZG7p1orhznzvxTd97Xay1Mh/view?usp=sharing) which contains 60,000 before and after images of blocks being dropped. This is the same dataset used in [O2P2](https://people.eecs.berkeley.edu/~janner/o2p2/) "Reasoning About Physical Interactions with Object-Oriented Prediction and Planning."
+The stack_o2p2_60.h5 dataset contains 60,000 before and after images of blocks being dropped. This is the same dataset used in [O2P2](https://people.eecs.berkeley.edu/~janner/o2p2/) "Reasoning About Physical Interactions with Object-Oriented Prediction and Planning."
 
 This dataset can also be generated using the Mujoco environment.
 
@@ -42,7 +44,7 @@ python stacking_generating_singlestep.py --num_images NUM_IMAGES
 which will by default output the dataset to op3/envs/blocks/rendered/blocks.h5. See the args in the file for more options such as controlling the number of objects in the scene.
 
 #### Multi-Step Block Stacking
-Download the multi-step block stacking dataset [pickplace](https://drive.google.com/file/d/132_9yNQDK1o0QdhkHWwdj9WJDdrPFu9w/view?usp=sharing) which contains 10,000 trajectories where each trajectory contains five frames of randomly picking and placing blocks.
+The pickplace_multienv_10k.h5 dataset contains 10,000 trajectories where each trajectory contains five frames of randomly picking and placing blocks.
 
 
 This dataset can also be generated using the Mujoco environment. Run
@@ -56,7 +58,7 @@ See the args in the file for more options such as controlling the number of obje
 ### Training OP3
 To train OP3 run
 ```
-python exps/train_op3.py --variant [stack, pickplace, cloth]
+python exps/train_op3/train_op3.py --variant [stack, pickplace, cloth] --debug 0
 ```
 where the variants are `stack` for single step block stacking, `pickplace` for multistep block stacking, and `cloth` for the real world evaluation on the robotic pushing dataset from [here](https://sites.google.com/berkeley.edu/robotic-interaction-datasets). These loads in parameters from `op3/exp_variants/variants.py` which can also be modified or extended. The preprocessed cloth dataset can be downloaded from [here](https://drive.google.com/file/d/1_eZE0BH5-NVkusQg5FZsFTP6v1kvfIk5/view?usp=sharing)
 
@@ -64,14 +66,14 @@ where the variants are `stack` for single step block stacking, `pickplace` for m
 ### Running MPC
 To run visual mpc with a trained op3 model, for single-step block stacking run
 ```
-python exps/mpc_stack.py -m stack_model_params
+python exps/stack_exps/mpc_stack.py -m <stack_model_params_file>
 ```
 and for multi-step block stacking run,
 ```
-python exps/mpc_pickplace.py -m pickplace_model_params
+python exps/pickplace_exps/mpc_pickplace.py -m <pickplace_model_params_file>
 ```
 
-where the -m argument if the name of the model file trained previously. Model files are expected to be in `op3/data/saved_models`. Pretrained models can be downloaded for [stacking](https://drive.google.com/file/d/1qQWrKPFIFme6OlXkhdpZiZxJL8OpWBpj/view?usp=sharing) and [pickplace](https://drive.google.com/file/d/1U2zrEoTs0Qq3a_twSaI6QOYIn7NimsdV/view?usp=sharing).
+where the -m argument if the name of the model file trained previously. e in `op3/data/saved_models`. Pretrained models are provided in the appropiate saved_models directory such as OP3/exps/stack_exps/saved_models.
 
 ## Using a GPU
 You can use a GPU by calling
