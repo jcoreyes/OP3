@@ -44,6 +44,10 @@ python stacking_generating_singlestep.py --num_images NUM_IMAGES
 which will by default output the dataset to op3/envs/blocks/rendered/blocks.h5. See the args in the file for more options such as controlling the number of objects in the scene.
 
 #### Multi-Step Block Stacking
+<br>
+<p float='center'>
+  <img src='https://drive.google.com/uc?export=view&id=1-7T2b8xGKTCuOpiR9OxWgu2NYTiJ6Wa_'>
+</p>
 The pickplace_multienv_10k.h5 dataset contains 10,000 trajectories where each trajectory contains five frames of randomly picking and placing blocks.
 
 
@@ -54,13 +58,20 @@ python block_pick_and_place.py -f OUTPUT_FILENAME --num_sums NUM_SIMS
 ```
 See the args in the file for more options such as controlling the number of objects in the scene and biasing pick locations to pick up objects.
 
+#### Real-World Action-Conditioned Video Prediction
+<br>
+<p float='center'>
+  <img src='https://drive.google.com/uc?export=view&id=1BDRLiyjPlYQaUYMYn77SUkUM6s0fqbMb'>
+</p>
+The robotic pushing dataset is from https://sites.google.com/berkeley.edu/robotic-interaction-datasets.
+
 
 ### Training OP3
 To train OP3 run
 ```
 python exps/train_op3/train_op3.py --variant [stack, pickplace, cloth] --debug 0
 ```
-where the variants are `stack` for single step block stacking, `pickplace` for multistep block stacking, and `cloth` for the real world evaluation on the robotic pushing dataset from [here](https://sites.google.com/berkeley.edu/robotic-interaction-datasets). These loads in parameters from `op3/exp_variants/variants.py` which can also be modified or extended. The preprocessed cloth dataset can be downloaded from [here](https://drive.google.com/file/d/1_eZE0BH5-NVkusQg5FZsFTP6v1kvfIk5/view?usp=sharing)
+where the variants are `stack` for single step block stacking, `pickplace` for multistep block stacking, and `cloth` for the real world evaluation on the robotic pushing dataset. These loads in parameters from `op3/exp_variants/variants.py` which can also be modified or extended. The preprocessed cloth dataset can be downloaded from [here](https://drive.google.com/file/d/1_eZE0BH5-NVkusQg5FZsFTP6v1kvfIk5/view?usp=sharing).
 
 
 ### Running MPC
