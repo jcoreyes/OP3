@@ -1,9 +1,25 @@
 # OP3
-We present object-centric perception, prediction, and planning (OP3), an entity-centric dynamic latent variable framework for model-based reinforcement learning that acquires entity representations from raw visual observations without supervision and uses them to predict and plan.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/rlworkgroup/metaworld/blob/master/LICENSE)
+
+__We present object-centric perception, prediction, and planning (OP3), an entity-centric dynamic latent variable framework for model-based reinforcement learning that acquires entity representations from raw visual observations without supervision and uses them to predict and plan.__
 
 CoRL 2019 Conference Paper: ["Entity Abstraction in Visual Model-Based Reinforcement Learning"](https://arxiv.org/abs/1910.12827). 
 
 More information is available at the [project website](https://sites.google.com/view/op3website/).
+
+__Table of Contents__
+- [Installation](#installation)
+- [Running Experiments](#running-experiments)
+  * [Datasets and Tasks](#datasets-and-tasks)
+    * [Single-Step Block Stacking](#single-step-block-stacking)
+    * [Multi-Step Block Stacking](#multi-step-block-stacking)
+    * [Real-World Action-Conditioned Video Prediction](#real-world-action-conditioned-video-prediction)
+  * [Training OP3](#training-op3)
+  * [Running MPC](#running-mpc)
+- [Using a GPU](#using-a-gpu)
+- [Visualizing Results](#visualizing-results)
+- [Launching Jobs with Doodad](#launching-jobs-with-doodad)
+- [Credits](#credits)
 
 ## Installation
 1. Copy `conf.py` to `conf_private.py`:
@@ -21,7 +37,7 @@ You'll need to [get your own MuJoCo key](https://www.roboti.us/license.html) if 
 3. Download this version of [doodad](https://github.com/jcoreyes/doodad) and add the repo to your pythonpath. Docker and doodad dependencies will only be needed if running on AWS or GCP.
 
 ## Running Experiments
-### Downloading and Generating Datasets
+### Datasets and Tasks
 Download datasets from this [google drive folder](https://drive.google.com/drive/folders/18wbAHeyvBblabn9pz3MEajox0-1mXrn2?usp=sharing) to `op3/data/datasets/`.
 #### Single-Step Block Stacking
 <br>
