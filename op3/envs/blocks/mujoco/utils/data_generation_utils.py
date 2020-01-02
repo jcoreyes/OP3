@@ -110,7 +110,10 @@ def hdf5_to_image(filename, num_to_visualize=100):
                     for j in range(dataset.shape[0]):
                         imfile = os.path.join(dataset_folder, str(j)+'.png')
                         if d == 'features':
-                            cv2.imwrite(imfile, dataset[j, ex])
+                            if (np.max(dataset[j, ex]) > 1):
+                                cv2.imwrite(imfile, dataset[j, ex])
+                            else:
+                                cv2.imwrite(imfile, dataset[j, ex]*255)
                         elif d == 'groups':
                             cv2.imwrite(imfile, dataset[j, ex]*255.0/(num_groups))
                         elif d == 'collisions':
