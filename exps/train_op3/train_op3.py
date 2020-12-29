@@ -22,31 +22,31 @@ def load_dataset(data_path, train=True, size=None, batchsize=8, static=True):
         exit(0)
     if 'stack' in data_path:
         if train:
-            feats = np.array(hdf5_file['training']['features']) # (T, bs, ch, imsize, imsize)
+            feats = np.array(hdf5_file['training']['features']) # (T, s, ch, imsize, imsize)
         else:
             feats = np.array(hdf5_file['validation']['features'])
-        feats = np.moveaxis(feats, -1, 2)  # (T, bs, ch, imsize, imsize)
-        feats = np.moveaxis(feats, 0, 1)   # (bs, T, ch, imsize, imsize)
+        feats = np.moveaxis(feats, -1, 2)  # (T, s, ch, imsize, imsize)
+        feats = np.moveaxis(feats, 0, 1)   # (s, T, ch, imsize, imsize)
         torch_dataset = TensorDataset(torch.Tensor(feats)[:size])
         dataset = BlocksDataset(torch_dataset, batchsize=batchsize)
         T = feats.shape[1]
         return dataset, T
     elif 'cloth' in data_path or 'pickplace' in data_path:
-        #cloth: bs=13866, T=20, action_dim=4
-        #pickplace_multienv_10k: bs=10000, T=21, action_dim=6
+        #cloth: s=13866, T=20, action_dim=4
+        #pickplace_multienv_10k: s=10000, T=21, action_dim=6
         if train:
             feats = np.array(hdf5_file['training']['features'])
             actions = np.array(hdf5_file['training']['actions'])
         else:
             feats = np.array(hdf5_file['validation']['features'])
             actions = np.array(hdf5_file['validation']['actions'])
-        feats = np.moveaxis(feats, -1, 2)  # (T, bs, ch, imsize, imsize)
-        feats = np.moveaxis(feats, 0, 1)  # (bs, T, ch, imsize, imsize)
-        actions = np.moveaxis(actions, 0, 1)  # (bs, T-1, action_dim) EXCEPT for pickplace envs which are (bs,T,A) instead
+        feats = np.moveaxis(feats, -1, 2)  # (T, s, ch, imsize, imsize)
+        feats = np.moveaxis(feats, 0, 1)  # (s, T, ch, imsize, imsize)
+        actions = np.moveaxis(actions, 0, 1)  # (s, T-1, action_dim) EXCEPT for pickplace envs which are (s,T,A) instead
         if static:
-            bs, T = feats.shape[0], feats.shape[1]
+            s, T = feats.shape[0], feats.shape[1]
             if size == None:
-                size = bs
+                size = s
             rand_ts = np.random.randint(0, T, size=size)  # As the first timesteps could be correlated
             tmp = torch.Tensor(feats[range(size), rand_ts]).unsqueeze(1)  # (size, 1, ch, imsize, imsize)
             torch_dataset = TensorDataset(tmp)
@@ -58,6 +58,18 @@ def load_dataset(data_path, train=True, size=None, batchsize=8, static=True):
             dataset.action_dim = 4  # Changing it from 6 as we ignore the z values in the pickplace environment
 
         T = feats.shape[1]
+        return dataset, T
+    elif 'bouncing_balls' in data_path:
+        FRAMES_PER_SEQUENCE = 10
+        if train:
+            feats = np.array(hdf5_file['training']['features'])  # (T,s,imsize,imsize,3), values btwn 0-1
+        else:
+            feats = np.array(hdf5_file['validation']['features'])
+        feats = np.transpose(feats, (1, 0, 4, 2, 3))[:size, :FRAMES_PER_SEQUENCE] * 255  # (s,FRAMES_PER_SEQUENCE,3,64,46)
+        torch_dataset = TensorDataset(torch.Tensor(feats))
+        dataset = BlocksDataset(torch_dataset, batchsize=batchsize)
+        T = feats.shape[1]
+        print(feats.shape, np.max(feats), np.min(feats))
         return dataset, T
     else:
         raise ValueError("Invalid dataset given: {}".format(data_path))

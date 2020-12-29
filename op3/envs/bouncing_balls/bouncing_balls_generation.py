@@ -494,7 +494,7 @@ if __name__ == "__main__":
     print(args)
 
     if args.filename is None:
-        args.filename = 'n' + args.num_balls + 'nb' + args.num_bricks + 'm' + args.masses + 'r' + args.radii + \
+        args.filename = 'bouncing_balls_n' + args.num_balls + 'nb' + args.num_bricks + 'm' + args.masses + 'r' + args.radii + \
                         'bs' + args.brick_sizes + '.h5'  # Default filename
     if args.filename[-3:] != ".h5":
         args.filename += ".h5"
