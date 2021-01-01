@@ -7,6 +7,9 @@ from mpl_toolkits.mplot3d import Axes3D  # Note, this is needed for 3d plotting 
 import matplotlib.cm as cm
 from matplotlib import colors
 
+# import sys
+# sys.path.append("../../")
+
 from op3.torch import pytorch_util as ptu
 import op3.torch.op3_modules.visualizer as visualizer
 from op3.util.plot import plot_multi_image
@@ -264,7 +267,11 @@ class Stage3_CEM:
         rand_actions = ptu.from_numpy(np.stack([self.env.sample_action() for _ in range(self.num_loc_samples)])) # (B,A)
         state_action_attention, interaction_attention, all_delta_vals, all_lambdas_deltas = \
             model.get_all_activation_values(hidden_state, rand_actions)
+
         interaction_attention = interaction_attention.sum(-1)  # (B,K,K-1) -> (B,K)
+        normalized_weights = interaction_attention / interaction_attention.sum(0)  #(B,K)
+        mean_point = (normalized_weights.unsqueeze(2) * rand_actions[:, :2].unsqueeze(1))  # ((B,K)->(B,K,1) * (B,2)->(B,1,2)) -> (B,K,2)
+        mean_point = mean_point.sum(0)  #(B,K,2) -> (K,2)
 
         if file_name is not None:
             plot_action_vals(self.env, ptu.get_numpy(interaction_attention), ptu.get_numpy(rand_actions),
@@ -822,7 +829,7 @@ if __name__ == "__main__":
             cem_steps=5,
             num_samples=200,
             time_horizon=num_goal_objects,
-            action_type= None,  # Should be [None, 4], This controls if it is object oriented (when set to 4) or raw env action space (None)
+            action_type= 4,  # Should be [None, 4], This controls if it is object oriented (when set to 4) or raw env action space (None)
         ),
         num_actions_to_take=num_goal_objects*2,
         num_action_to_take_per_plan=num_goal_objects,

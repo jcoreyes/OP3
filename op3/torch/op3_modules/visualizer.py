@@ -9,7 +9,7 @@ def create_image_from_subimages(images, file_name):
     cur_shape = images.shape
     images = images.permute(1, 0, 2, 3, 4).contiguous()  # (H,W,3,D,D)
     images = images.view(-1, *cur_shape[-3:])  # (H*W, 3, D, D)
-    save_image(images, filename=file_name, nrow=cur_shape[0])
+    save_image(images, fp=file_name, nrow=cur_shape[0])
 
 
 # Inputs: true_images (T1,3,D,D),  colors (T,K,3,D,D),  masks (T,K,1,D,D), schedule (T) np
